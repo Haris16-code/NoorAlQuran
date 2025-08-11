@@ -51,8 +51,19 @@ Check out the live demo here: [https://nooralquran.unaux.com/](https://nooralqur
 
 ---
 
+### How to add your screenshot:
+
+- Replace `https://your-image-host.com/path-to-demo-image.png` with the actual URL of your demo screenshot image.  
+- You can upload the image to GitHub repo (e.g., in `/assets` folder) or use any image hosting service like Imgur, GitHub Issues, or GitHub Pages.
+
+---
+
+If you want, I can help you generate or optimize a screenshot for this or help with uploading it!
+
+
 ## Installation
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/NoorAlQuran.git
+   git clone https://github.com/Haris16-code/NoorAlQuran.git
+
