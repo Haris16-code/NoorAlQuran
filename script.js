@@ -1,7 +1,5 @@
 (async function(){
-  // MAIN: your existing quran-json base for text/translations
   const BASE_QURAN = "https://cdn.jsdelivr.net/npm/quran-json@3.1.2/dist";
-  // AUDIO: same source used in your earlier audio code (semarketir quranjson raw)
   const BASE_AUDIO = "https://raw.githubusercontent.com/semarketir/quranjson/master/source";
 
   // Elements
@@ -17,6 +15,10 @@
   const themeSelect = document.getElementById('themeSelect');
   const showBookmarksBtn = document.getElementById('showBookmarksBtn');
   const bookmarksListEl = document.getElementById('bookmarksList');
+  const drawer = document.getElementById('drawer');
+  const openDrawerBtn = document.getElementById('openDrawerBtn');
+  const mobileTitle = document.getElementById('mobileTitle');
+  const openSettingsMobile = document.getElementById('openSettingsMobile');
 
   // State
   let surahIndex = [];
@@ -25,100 +27,153 @@
   let currentTheme = localStorage.getItem('quran_theme') || 'dark';
   let bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '{}');
 
-  // Audio state (global so only one audio plays at a time)
-  // _q_audio: Audio object; _q_audio_btn: the button element currently showing playing state
+  // Audio state (global)
   window._q_audio = null;
   window._q_audio_btn = null;
-  // Cache audio index per surah to avoid refetching
   const audioIndexCache = {};
 
-  // Apply saved theme
-  function applyTheme(theme) {
-    if(theme === 'light') {
-      document.body.classList.add('light');
-    } else {
-      document.body.classList.remove('light');
-    }
-    themeSelect.value = theme;
+  // MOBILE detection: combine matchMedia (screen size) and UA soft-check
+  function detectMobileDevice(){
+    const small = window.matchMedia('(max-width:700px)').matches;
+    const ua = navigator.userAgent || navigator.vendor || '';
+    const uaMobile = /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    return small || uaMobile;
   }
 
+  // Apply initial theme
+  function applyTheme(theme){
+    if(theme === 'light') document.body.classList.add('light');
+    else document.body.classList.remove('light');
+    themeSelect.value = theme;
+  }
   applyTheme(currentTheme);
   translationSelect.value = currentTranslation;
 
-  // Fetch helper
-  async function fetchJson(url) {
-    try {
-      const res = await fetch(url);
-      if(!res.ok) return null;
-      return await res.json();
-    } catch {
+  // Apply mobile class and adjust UI components
+  function applyResponsiveUI(){
+    const mobile = detectMobileDevice();
+    if(mobile){
+      document.body.classList.add('mobile');
+      // move surah list into drawer for mobile (cloned)
+      buildDrawer();
+      mobileTitle.textContent = currentSurahId ? `Surah ${currentSurahId}` : 'Qur\'an';
+      // hide desktop sidebar if present
+      document.getElementById('sidebar').style.display = 'none';
+      // show mobile control buttons
+      document.querySelector('.mobile-top').style.display = 'flex';
+    } else {
+      document.body.classList.remove('mobile');
+      drawer.classList.remove('show');
+      document.getElementById('sidebar').style.display = 'block';
+      document.querySelector('.mobile-top').style.display = 'none';
+    }
+  }
+
+  // Build drawer (clone surah list & bookmarks) for mobile
+  function buildDrawer(){
+    drawer.innerHTML = '';
+    const h = document.createElement('div');
+    h.style.display='flex'; h.style.justifyContent='space-between'; h.style.alignItems='center'; h.style.marginBottom='8px';
+    const t = document.createElement('div'); t.textContent = 'Surahs'; t.style.fontWeight='700';
+    const close = document.createElement('button'); close.className='btn secondary'; close.textContent='Close'; close.onclick = ()=>drawer.classList.remove('show');
+    h.appendChild(t); h.appendChild(close);
+    drawer.appendChild(h);
+
+    // search in drawer
+    const sdiv = document.createElement('div'); sdiv.className='search';
+    const input = document.createElement('input'); input.placeholder='Search surah...';
+    input.addEventListener('input', ()=> {
+      const q = input.value.trim().toLowerCase();
+      renderSurahList(q ? surahIndex.filter(s => s.name.toLowerCase().includes(q) || s.transliteration.toLowerCase().includes(q) || String(s.id)===q) : surahIndex, drawer);
+    });
+    sdiv.appendChild(input);
+    drawer.appendChild(sdiv);
+
+    // surah container
+    const list = document.createElement('div'); list.id='drawerSurahList'; list.style.marginTop='8px';
+    drawer.appendChild(list);
+
+    // bookmarks
+    const bmBtn = document.createElement('button'); bmBtn.className='btn secondary'; bmBtn.style.marginTop='8px'; bmBtn.textContent='Show Bookmarks';
+    bmBtn.onclick = ()=> {
+      const bmArea = drawer.querySelector('#drawerBookmarks');
+      if(bmArea){
+        bmArea.style.display = bmArea.style.display === 'block' ? 'none' : 'block';
+      } else {
+        const area = document.createElement('div'); area.id='drawerBookmarks'; area.style.marginTop='8px';
+        area.innerHTML = '<h3>Bookmarks</h3>'; drawer.appendChild(area);
+        // render bookmarks into drawer
+        const keys = Object.keys(bookmarks).sort((a,b)=>bookmarks[b].timestamp - bookmarks[a].timestamp);
+        if(keys.length===0) area.innerHTML += '<div class="muted">No saved bookmarks.</div>';
+        else {
+          for(const k of keys){
+            const bm = bookmarks[k];
+            const item = document.createElement('div'); item.className='bookmark-item';
+            const info = document.createElement('div'); info.className='bookmark-info'; info.innerHTML = `<strong>Surah ${bm.surahId}</strong> Ayah ${bm.verseId}`;
+            const go = document.createElement('button'); go.className='btn'; go.textContent='Go';
+            go.onclick = ()=> { drawer.classList.remove('show'); loadSurah(bm.surahId).then(()=> setTimeout(()=>scrollToVerse(bm.verseId),200)); };
+            item.appendChild(info); item.appendChild(go);
+            area.appendChild(item);
+          }
+        }
+      }
+    };
+    drawer.appendChild(bmBtn);
+
+    // initial render of surah list
+    renderSurahList(surahIndex, drawer);
+  }
+
+  // safe fetch JSON
+  async function fetchJson(url){
+    try{
+      const r = await fetch(url);
+      if(!r.ok) throw new Error(`${r.status}`);
+      return await r.json();
+    }catch(e){
       return null;
     }
   }
 
-  // Load Surah list
-  async function loadSurahList() {
+  // load surah index
+  async function loadSurahList(){
     listStatus.textContent = 'Loading surah list...';
+    surahListEl.innerHTML = '';
     const data = await fetchJson(`${BASE_QURAN}/chapters/index.json`);
-    if(!data) {
-      listStatus.textContent = 'Failed to load surah list.'; return;
-    }
+    if(!data){ listStatus.textContent='Failed to load surah list.'; return; }
     surahIndex = data;
     renderSurahList(surahIndex);
-    listStatus.textContent = '';
+    listStatus.textContent='';
+    // rebuild drawer if mobile
+    if(document.body.classList.contains('mobile')) buildDrawer();
   }
 
-  function renderSurahList(list) {
-    surahListEl.innerHTML = '';
-    if(list.length === 0) {
-      surahListEl.innerHTML = '<div class="muted">No surah found.</div>';
-      return;
-    }
-    for (const surah of list) {
-      const div = document.createElement('div');
-      div.className = 'surah-item';
-      div.tabIndex = 0;
-      div.setAttribute('role', 'button');
-      div.setAttribute('aria-pressed', 'false');
-      div.dataset.id = surah.id;
-
-      div.innerHTML = `<strong>${surah.id}. ${surah.name}</strong><br><span class="surah-meta">${surah.transliteration} - ${surah.type}</span>`;
-      div.addEventListener('click', () => {
-        showBookmarksList(false);
-        loadSurah(surah.id);
-      });
-      div.addEventListener('keydown', (e) => {
-        if(e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          showBookmarksList(false);
-          loadSurah(surah.id);
-        }
-      });
-      surahListEl.appendChild(div);
+  // render surah list into container (default sidebar)
+  function renderSurahList(list, container = surahListEl){
+    container.innerHTML = '';
+    if(!list || list.length===0){ container.innerHTML = '<div class="muted">No surah found.</div>'; return; }
+    for(const surah of list){
+      const div = document.createElement('div'); div.className='surah-item'; div.tabIndex=0;
+      div.innerHTML = `<strong>${surah.id}. ${surah.name}</strong><div class="surah-meta">${surah.transliteration} · ${surah.type}</div>`;
+      div.onclick = ()=> { if(document.body.classList.contains('mobile')) drawer.classList.remove('show'); loadSurah(surah.id); };
+      div.onkeydown = (e)=> { if(e.key==='Enter' || e.key===' ') loadSurah(surah.id); };
+      container.appendChild(div);
     }
   }
 
-  searchInput.addEventListener('input', () => {
-    const term = searchInput.value.trim().toLowerCase();
-    if(!term) {
-      renderSurahList(surahIndex);
-      return;
-    }
-    const filtered = surahIndex.filter(s => 
-      s.name.toLowerCase().includes(term) ||
-      s.transliteration.toLowerCase().includes(term) ||
-      s.id.toString() === term
-    );
-    renderSurahList(filtered);
+  // search filter
+  searchInput.addEventListener('input', ()=> {
+    const q = searchInput.value.trim().toLowerCase();
+    if(!q) renderSurahList(surahIndex);
+    else renderSurahList(surahIndex.filter(s => s.name.toLowerCase().includes(q) || s.transliteration.toLowerCase().includes(q) || String(s.id)===q));
   });
 
-  // utility: convert to padded strings
-  function toNumberParts(index){
-    const n = parseInt(index,10);
-    return { n, padded3: String(n).padStart(3,'0'), padded: String(n) };
-  }
+  refreshBtn.onclick = ()=> loadSurahList();
 
-  // fetch audio index for a surah (cache)
+  // helper: padded id
+  function toNumberParts(index){ const n = parseInt(index,10); return { n, padded3: String(n).padStart(3,'0'), padded: String(n) }; }
+
+  // audio index fetch (cache)
   async function getAudioIndexForSurah(surahId){
     const { padded3 } = toNumberParts(surahId);
     if(audioIndexCache[padded3]) return audioIndexCache[padded3];
@@ -127,429 +182,254 @@
     return idx;
   }
 
-  async function loadSurah(surahId) {
+  // load surah data and audio index
+  async function loadSurah(surahId){
     currentSurahId = surahId;
-    // stop any playing audio when switching surah
+    applyResponsiveUI(); // update mobile header title
     stopCurrentAudio();
-
     contentEl.innerHTML = `<div class="muted">Loading Surah ${surahId}...</div>`;
     const urlWithTranslation = `${BASE_QURAN}/chapters/${currentTranslation}/${surahId}.json`;
     const urlArabicOnly = `${BASE_QURAN}/chapters/${surahId}.json`;
 
     let data = await fetchJson(urlWithTranslation);
-    if(!data) {
-      data = await fetchJson(urlArabicOnly);
-    }
-    if(!data) {
-      contentEl.innerHTML = `<div class="muted">Failed to load Surah ${surahId}.</div>`;
-      return;
-    }
+    if(!data) data = await fetchJson(urlArabicOnly);
+    if(!data){ contentEl.innerHTML = `<div class="muted">Failed to load Surah ${surahId}.</div>`; return; }
 
-    // also load audio index for this surah (if available) in parallel
     const audioIndex = await getAudioIndexForSurah(surahId);
-
     renderSurah(data, audioIndex);
     saveLastBookmarkOrSurah(surahId);
+    if(document.body.classList.contains('mobile')) mobileTitle.textContent = `${data.name}`;
   }
 
+  // render surah with audio buttons (keeps other features)
   function renderSurah(data, audioIndex){
     const { id, name, transliteration, total_verses, verses } = data;
-
     document.title = `Qur'an - Surah ${name} (${transliteration})`;
 
-    const fragment = document.createDocumentFragment();
+    const frag = document.createDocumentFragment();
 
-    const titlebar = document.createElement('div');
-    titlebar.className = 'titlebar';
-    const titleH2 = document.createElement('h2');
-    titleH2.textContent = `${id}. ${name} (${transliteration}) — ${total_verses} verses`;
-    titlebar.appendChild(titleH2);
+    const titlebar = document.createElement('div'); titlebar.className='titlebar';
+    const h2 = document.createElement('h2'); h2.textContent = `${id}. ${name} (${transliteration}) — ${total_verses} verses`;
+    titlebar.appendChild(h2);
 
-    const navControls = document.createElement('div');
-    navControls.className = 'controls';
+    const nav = document.createElement('div'); nav.className='controls';
+    const prevBtn = document.createElement('button'); prevBtn.className='btn secondary'; prevBtn.textContent='← Prev';
+    prevBtn.disabled = (id<=1); prevBtn.onclick = ()=> { if(id>1) loadSurah(id-1); };
+    const nextBtn = document.createElement('button'); nextBtn.className='btn secondary'; nextBtn.textContent='Next →';
+    nextBtn.disabled = (id>=114); nextBtn.onclick = ()=> { if(id<114) loadSurah(id+1); };
+    nav.appendChild(prevBtn); nav.appendChild(nextBtn);
+    titlebar.appendChild(nav);
 
-    const prevBtn = document.createElement('button');
-    prevBtn.className = 'btn secondary';
-    prevBtn.textContent = '← Prev';
-    prevBtn.disabled = (id <= 1);
-    prevBtn.title = 'Previous Surah';
-    prevBtn.onclick = () => {
-      if(id > 1) loadSurah(id - 1);
-    };
+    frag.appendChild(titlebar);
 
-    const nextBtn = document.createElement('button');
-    nextBtn.className = 'btn secondary';
-    nextBtn.textContent = 'Next →';
-    nextBtn.disabled = (id >= 114);
-    nextBtn.title = 'Next Surah';
-    nextBtn.onclick = () => {
-      if(id < 114) loadSurah(id + 1);
-    };
-
-    navControls.appendChild(prevBtn);
-    navControls.appendChild(nextBtn);
-    titlebar.appendChild(navControls);
-    fragment.appendChild(titlebar);
-
-    // For audio URL building
     const { padded3 } = toNumberParts(id);
 
-    for (const verse of verses) {
-      const verseCard = document.createElement('article');
-      verseCard.className = 'verse-card';
-
+    for(const verse of verses){
+      const verseCard = document.createElement('article'); verseCard.className='verse-card';
       const isBookmarked = !!bookmarks[`${id}-${verse.id}`];
-      if(isBookmarked) {
-        verseCard.classList.add('bookmarked');
-      }
+      if(isBookmarked) verseCard.classList.add('bookmarked');
 
-      const metaDiv = document.createElement('div');
-      metaDiv.className = 'verse-meta';
+      const meta = document.createElement('div'); meta.className='verse-meta';
+      const vnum = document.createElement('div'); vnum.className='verse-num'; vnum.textContent = `(${verse.id})`;
+      const actions = document.createElement('div'); actions.className='verse-actions';
 
-      const verseNum = document.createElement('span');
-      verseNum.className = 'verse-num';
-      verseNum.textContent = `(${verse.id})`;
-
-      const actionsDiv = document.createElement('div');
-      actionsDiv.className = 'verse-actions';
-
-      // Bookmark button
-      const bookmarkBtn = document.createElement('button');
-      bookmarkBtn.title = isBookmarked ? 'Remove bookmark' : 'Bookmark this ayah';
-      bookmarkBtn.classList.add('bookmark-btn');
-      bookmarkBtn.innerHTML = isBookmarked ? '🔖' : '📑';
-      bookmarkBtn.addEventListener('click', () => {
+      // bookmark
+      const bmBtn = document.createElement('button'); bmBtn.className='bookmark-btn'; bmBtn.title = isBookmarked ? 'Remove bookmark' : 'Bookmark this ayah';
+      bmBtn.innerHTML = isBookmarked ? '🔖' : '📑';
+      bmBtn.onclick = ()=> {
         toggleBookmark(id, verse.id, verse.text);
-        const nowBookmarked = !!bookmarks[`${id}-${verse.id}`];
-        bookmarkBtn.innerHTML = nowBookmarked ? '🔖' : '📑';
-        bookmarkBtn.title = nowBookmarked ? 'Remove bookmark' : 'Bookmark this ayah';
-        if(nowBookmarked) {
-          verseCard.classList.add('bookmarked');
-        } else {
-          verseCard.classList.remove('bookmarked');
-        }
-        renderBookmarksList(); // update bookmark list if visible
-      });
+        const now = !!bookmarks[`${id}-${verse.id}`];
+        bmBtn.innerHTML = now ? '🔖' : '📑';
+        bmBtn.title = now ? 'Remove bookmark' : 'Bookmark this ayah';
+        if(now) verseCard.classList.add('bookmarked'); else verseCard.classList.remove('bookmarked');
+        renderBookmarksList();
+      };
 
-      // Share button
-      const shareBtn = document.createElement('button');
-      shareBtn.title = 'Share this ayah';
-      shareBtn.innerHTML = '📤';
-      shareBtn.addEventListener('click', () => {
-        shareAyah(id, verse.id, verse.text, data.name, data.transliteration);
-      });
+      // share
+      const shareBtn = document.createElement('button'); shareBtn.title='Share this ayah'; shareBtn.innerHTML='📤';
+      shareBtn.onclick = ()=> shareAyah(id, verse.id, verse.text, data.name, data.transliteration);
 
-      actionsDiv.appendChild(bookmarkBtn);
+      actions.appendChild(bmBtn);
 
-      // AUDIO: If audioIndex exists and has this verse, add audio button
+      // audio: check audioIndex structure for verse file
       let audioFile = null;
-      try {
-        // audioIndex structure matches earlier repo: index.verse['verse_1'] ...
+      try{
         if(audioIndex && audioIndex.verse){
-          // find by key name used in other code: verse_{n}
           const key = 'verse_' + verse.id;
-          if(audioIndex.verse[key] && audioIndex.verse[key].file){
-            audioFile = audioIndex.verse[key].file;
-          }
+          if(audioIndex.verse[key] && audioIndex.verse[key].file) audioFile = audioIndex.verse[key].file;
         }
-      } catch(e){
-        audioFile = null;
-      }
+      }catch(e){ audioFile = null; }
 
       if(audioFile){
-        const audioBtn = document.createElement('button');
-        audioBtn.className = 'audio-btn';
-        // audio file name might be like 001001.mp3 ; store full path or relative index
-        // store file (raw filename) to construct final url later.
+        const audioBtn = document.createElement('button'); audioBtn.className='audio-btn';
         audioBtn.dataset.audio = audioFile;
-        audioBtn.innerHTML = `▶ Play`;
+        audioBtn.textContent = '▶ Play';
         audioBtn.title = 'Play recitation for this ayah';
 
-        // audio click handler - uses global window._q_audio to ensure single audio
-        audioBtn.addEventListener('click', (ev) => {
+        audioBtn.addEventListener('click', ()=>{
           const file = audioBtn.dataset.audio;
           const audioUrl = `${BASE_AUDIO}/audio/${padded3}/${file}`;
 
-          // if some other audio is playing and it's not this same url, stop it
+          // If another audio playing
           if(window._q_audio && !window._q_audio.paused){
-            // if same audio object and same source toggle play/pause
             if(window._q_audio.src === audioUrl){
-              // same source -> toggle
-              if(window._q_audio.paused){
-                window._q_audio.play().catch(()=>{});
-                updateAudioBtnState(audioBtn, true);
-              } else {
-                window._q_audio.pause();
-                updateAudioBtnState(audioBtn, false);
-              }
+              if(window._q_audio.paused){ window._q_audio.play().catch(()=>{}); updateAudioBtnState(audioBtn,true); }
+              else { window._q_audio.pause(); updateAudioBtnState(audioBtn,false); }
               return;
             } else {
-              // different audio -> stop previous and reset its button
-              try {
-                window._q_audio.pause();
-              } catch(e){}
-              if(window._q_audio_btn){
-                updateAudioBtnState(window._q_audio_btn, false);
-              }
-              window._q_audio = null;
-              window._q_audio_btn = null;
+              try{ window._q_audio.pause(); }catch(e){}
+              if(window._q_audio_btn) updateAudioBtnState(window._q_audio_btn,false);
+              window._q_audio = null; window._q_audio_btn = null;
             }
           }
 
-          // If no audio object or different, create new Audio and play
+          // create new
           const a = new Audio(audioUrl);
           window._q_audio = a;
           window._q_audio_btn = audioBtn;
-          a.play().then(()=> {
-            updateAudioBtnState(audioBtn, true);
-          }).catch(err=>{
-            console.warn('audio play failed', err);
-            updateAudioBtnState(audioBtn, false);
-            window._q_audio = null;
-            window._q_audio_btn = null;
-          });
-          a.onended = ()=> {
-            updateAudioBtnState(audioBtn, false);
-            window._q_audio = null;
-            window._q_audio_btn = null;
-          };
-          a.onpause = ()=> {
-            // update button only if it's the same audio and not ended (onpause triggers for pause)
-            if(window._q_audio === a){
-              updateAudioBtnState(audioBtn, false);
-            }
-          };
+          a.play().then(()=> updateAudioBtnState(audioBtn,true)).catch(err=>{ console.warn('audio play failed',err); updateAudioBtnState(audioBtn,false); window._q_audio=null; window._q_audio_btn=null; });
+          a.onended = ()=> { updateAudioBtnState(audioBtn,false); window._q_audio=null; window._q_audio_btn=null; };
+          a.onpause = ()=> { if(window._q_audio === a) updateAudioBtnState(audioBtn,false); };
         });
 
-        actionsDiv.appendChild(audioBtn);
+        actions.appendChild(audioBtn);
       }
 
-      // append share button after audio/bookmark
-      actionsDiv.appendChild(shareBtn);
+      actions.appendChild(shareBtn);
 
-      metaDiv.appendChild(verseNum);
-      metaDiv.appendChild(actionsDiv);
+      meta.appendChild(vnum); meta.appendChild(actions);
 
-      const arabicText = document.createElement('div');
-      arabicText.className = 'verse-ar';
-      arabicText.textContent = verse.text;
-
-      const translitText = document.createElement('div');
-      translitText.className = 'verse-translation';
-      translitText.textContent = verse.transliteration || '';
-
-      const translationText = document.createElement('div');
-      translationText.className = 'verse-translation';
-
-      // Add Urdu font class for Urdu translation
+      const arabic = document.createElement('div'); arabic.className='verse-ar'; arabic.textContent = verse.text;
+      const translit = document.createElement('div'); translit.className='verse-translation'; translit.textContent = verse.transliteration || '';
+      const translation = document.createElement('div'); translation.className='verse-translation';
       let trText = '';
       if(verse.translation) trText = verse.translation;
       else if(verse.translations && verse.translations[currentTranslation]) trText = verse.translations[currentTranslation];
-      translationText.textContent = trText;
+      translation.textContent = trText;
+      if(currentTranslation === 'ur') translation.classList.add('ur'); else translation.classList.remove('ur');
 
-      if(currentTranslation === 'ur') {
-        translationText.classList.add('ur');
-      } else {
-        translationText.classList.remove('ur');
-      }
-
-      verseCard.appendChild(metaDiv);
-      verseCard.appendChild(arabicText);
-      if(translitText.textContent) verseCard.appendChild(translitText);
-      if(translationText.textContent) verseCard.appendChild(translationText);
-
-      fragment.appendChild(verseCard);
+      verseCard.appendChild(meta);
+      verseCard.appendChild(arabic);
+      if(translit.textContent) verseCard.appendChild(translit);
+      if(translation.textContent) verseCard.appendChild(translation);
+      frag.appendChild(verseCard);
     }
 
     contentEl.innerHTML = '';
-    contentEl.appendChild(fragment);
-
+    contentEl.appendChild(frag);
     scrollToLastBookmark(id);
   }
 
-  // helper: update audio button UI text/icon
-  function updateAudioBtnState(btn, playing){
-    if(!btn) return;
-    btn.textContent = playing ? '⏸ Pause' : '▶ Play';
-  }
+  // helpers for audio UI
+  function updateAudioBtnState(btn, playing){ if(!btn) return; btn.textContent = playing ? '⏸ Pause' : '▶ Play'; }
+  function stopCurrentAudio(){ if(window._q_audio){ try{ window._q_audio.pause(); }catch(e){} window._q_audio=null; } if(window._q_audio_btn){ updateAudioBtnState(window._q_audio_btn,false); window._q_audio_btn=null; } }
 
-  // stop current audio and reset button UI
-  function stopCurrentAudio(){
-    if(window._q_audio){
-      try { window._q_audio.pause(); } catch(e){}
-      window._q_audio = null;
-    }
-    if(window._q_audio_btn){
-      updateAudioBtnState(window._q_audio_btn, false);
-      window._q_audio_btn = null;
-    }
-  }
-
-  function toggleBookmark(surahId, verseId, text) {
+  // bookmark functions
+  function toggleBookmark(surahId, verseId, text){
     const key = `${surahId}-${verseId}`;
-    if(bookmarks[key]) {
-      delete bookmarks[key];
-    } else {
-      bookmarks[key] = { surahId, verseId, text, timestamp: Date.now() };
-    }
+    if(bookmarks[key]) delete bookmarks[key]; else bookmarks[key] = { surahId, verseId, text, timestamp: Date.now() };
     localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
     saveLastBookmarkOrSurah(surahId, verseId);
   }
+  function saveLastBookmarkOrSurah(surahId, verseId=null){ if(verseId) localStorage.setItem('lastBookmark', JSON.stringify({surahId,verseId})); else localStorage.setItem('lastBookmark', JSON.stringify({surahId})); }
 
-  function saveLastBookmarkOrSurah(surahId, verseId=null) {
-    if(verseId) {
-      localStorage.setItem('lastBookmark', JSON.stringify({surahId, verseId}));
-    } else {
-      localStorage.setItem('lastBookmark', JSON.stringify({surahId}));
-    }
-  }
-
-  function scrollToLastBookmark(surahId) {
-    try {
-      const lastBookmarkRaw = localStorage.getItem('lastBookmark');
-      if(!lastBookmarkRaw) return;
-      const lastBookmark = JSON.parse(lastBookmarkRaw);
-      if(lastBookmark.surahId !== surahId) return;
-      if(!lastBookmark.verseId) return;
+  function scrollToLastBookmark(surahId){
+    try{
+      const lastBookmarkRaw = localStorage.getItem('lastBookmark'); if(!lastBookmarkRaw) return;
+      const lastBookmark = JSON.parse(lastBookmarkRaw); if(lastBookmark.surahId !== surahId) return; if(!lastBookmark.verseId) return;
       const verses = contentEl.querySelectorAll('.verse-card');
-      for (const verseCard of verses) {
+      for(const verseCard of verses){
         const verseNumSpan = verseCard.querySelector('.verse-num');
-        if(verseNumSpan && verseNumSpan.textContent === `(${lastBookmark.verseId})`) {
-          verseCard.scrollIntoView({behavior: 'smooth', block: 'center'});
-          break;
-        }
+        if(verseNumSpan && verseNumSpan.textContent === `(${lastBookmark.verseId})`){ verseCard.scrollIntoView({behavior:'smooth',block:'center'}); break; }
       }
-    } catch(e) {
-      console.warn('scrollToLastBookmark error', e);
+    }catch(e){ console.warn('scroll error', e); }
+  }
+
+  function scrollToVerse(verseId){
+    const verses = contentEl.querySelectorAll('.verse-card');
+    for(const verseCard of verses){
+      const verseNumSpan = verseCard.querySelector('.verse-num');
+      if(verseNumSpan && verseNumSpan.textContent === `(${verseId})`){ verseCard.scrollIntoView({behavior:'smooth',block:'center'}); break; }
     }
   }
 
-  function shareAyah(surahId, verseId, text, surahName, surahTranslit) {
+  function shareAyah(surahId, verseId, text, surahName, surahTranslit){
     const shareText = `Surah ${surahId} (${surahName} / ${surahTranslit}), Ayah ${verseId}:\n\n${text}\n\n— Qur'an Viewer`;
-    if(navigator.share) {
-      navigator.share({
-        title: `Surah ${surahId} Ayah ${verseId}`,
-        text: shareText,
-      }).catch(() => alert('Sharing canceled or failed'));
-    } else {
-      navigator.clipboard.writeText(shareText).then(() => {
-        alert('Ayah text copied to clipboard');
-      }, () => {
-        alert('Failed to copy ayah text');
-      });
-    }
+    if(navigator.share){ navigator.share({title:`Surah ${surahId} Ayah ${verseId}`, text:shareText}).catch(()=>alert('Sharing canceled or failed')); }
+    else { navigator.clipboard.writeText(shareText).then(()=>alert('Ayah text copied to clipboard'), ()=>alert('Failed to copy ayah text')); }
   }
 
-  function renderBookmarksList() {
+  function renderBookmarksList(){
     bookmarksListEl.innerHTML = '';
-    if(Object.keys(bookmarks).length === 0) {
-      bookmarksListEl.innerHTML = '<div class="muted">No saved bookmarks.</div>';
-      return;
-    }
-
-    // Sort bookmarks by timestamp descending (recent first)
-    const sortedKeys = Object.keys(bookmarks).sort((a,b) => bookmarks[b].timestamp - bookmarks[a].timestamp);
-
-    const title = document.createElement('h3');
-    title.textContent = 'Saved Bookmarks';
-    bookmarksListEl.appendChild(title);
-
-    for(const key of sortedKeys) {
-      const bm = bookmarks[key];
-      const surahName = surahIndex.find(s => s.id === bm.surahId)?.name || `Surah ${bm.surahId}`;
-
-      const item = document.createElement('div');
-      item.className = 'bookmark-item';
-
-      const info = document.createElement('div');
-      info.className = 'bookmark-info';
-      info.innerHTML = `<span class="surah-name">${surahName}</span>Ayah ${bm.verseId}`;
-
-      const goBtn = document.createElement('button');
-      goBtn.className = 'bookmark-btn-go';
-      goBtn.textContent = 'Go to Ayah';
-      goBtn.title = `Go to Surah ${bm.surahId}, Ayah ${bm.verseId}`;
-      goBtn.addEventListener('click', () => {
-        showBookmarksList(false);
-        loadSurah(bm.surahId).then(() => {
-          setTimeout(() => {
-            scrollToVerse(bm.verseId);
-            saveLastBookmarkOrSurah(bm.surahId, bm.verseId);
-          }, 200);
-        });
-      });
-
-      item.appendChild(info);
-      item.appendChild(goBtn);
-
+    const keys = Object.keys(bookmarks).sort((a,b)=>bookmarks[b].timestamp - bookmarks[a].timestamp);
+    if(keys.length === 0){ bookmarksListEl.innerHTML = '<div class="muted">No saved bookmarks.</div>'; return; }
+    const title = document.createElement('h3'); title.textContent = 'Saved Bookmarks'; bookmarksListEl.appendChild(title);
+    for(const k of keys){
+      const bm = bookmarks[k]; const surahName = surahIndex.find(s => s.id === bm.surahId)?.name || `Surah ${bm.surahId}`;
+      const item = document.createElement('div'); item.className='bookmark-item';
+      const info = document.createElement('div'); info.className='bookmark-info'; info.innerHTML=`<span class="surah-name">${surahName}</span>Ayah ${bm.verseId}`;
+      const goBtn = document.createElement('button'); goBtn.className='bookmark-btn-go btn'; goBtn.textContent='Go to Ayah';
+      goBtn.onclick = ()=> { showBookmarksList(false); loadSurah(bm.surahId).then(()=> setTimeout(()=>{ scrollToVerse(bm.verseId); saveLastBookmarkOrSurah(bm.surahId, bm.verseId); },200)); };
+      item.appendChild(info); item.appendChild(goBtn);
       bookmarksListEl.appendChild(item);
     }
   }
 
-  function scrollToVerse(verseId) {
-    const verses = contentEl.querySelectorAll('.verse-card');
-    for(const verseCard of verses) {
-      const verseNumSpan = verseCard.querySelector('.verse-num');
-      if(verseNumSpan && verseNumSpan.textContent === `(${verseId})`) {
-        verseCard.scrollIntoView({behavior: 'smooth', block: 'center'});
-        break;
-      }
-    }
-  }
+  function showBookmarksList(show=true){ if(show){ bookmarksListEl.style.display='block'; surahListEl.style.display='none'; showBookmarksBtn.textContent='Hide Bookmarks'; renderBookmarksList(); } else { bookmarksListEl.style.display='none'; surahListEl.style.display='block'; showBookmarksBtn.textContent='Saved Bookmarks'; } }
 
-  function showBookmarksList(show=true) {
-    if(show) {
-      bookmarksListEl.style.display = 'block';
-      surahListEl.style.display = 'none';
-      showBookmarksBtn.textContent = 'Hide Bookmarks';
-      renderBookmarksList();
-    } else {
-      bookmarksListEl.style.display = 'none';
-      surahListEl.style.display = 'block';
-      showBookmarksBtn.textContent = 'Saved Bookmarks';
-    }
-  }
+  // event handlers
+  settingsBtn.onclick = ()=> settingsModal.classList.add('show');
+  openSettingsMobile.onclick = ()=> settingsModal.classList.add('show');
+  closeSettingsBtn.onclick = ()=> settingsModal.classList.remove('show');
+  themeSelect.onchange = (e)=> { currentTheme = e.target.value; localStorage.setItem('quran_theme', currentTheme); applyTheme(currentTheme); }
+  translationSelect.onchange = (e)=> { currentTranslation = e.target.value; localStorage.setItem('quran_translation', currentTranslation); if(currentSurahId) loadSurah(currentSurahId); }
+  showBookmarksBtn.onclick = ()=> { if(bookmarksListEl.style.display === 'block') showBookmarksList(false); else showBookmarksList(true); }
 
-  // Event handlers
-  refreshBtn.onclick = () => loadSurahList();
-  settingsBtn.onclick = () => settingsModal.classList.add('show');
-  closeSettingsBtn.onclick = () => settingsModal.classList.remove('show');
-  themeSelect.onchange = (e) => {
-    currentTheme = e.target.value;
-    localStorage.setItem('quran_theme', currentTheme);
-    applyTheme(currentTheme);
-  };
-  translationSelect.onchange = (e) => {
-    currentTranslation = e.target.value;
-    localStorage.setItem('quran_translation', currentTranslation);
-    if(currentSurahId) loadSurah(currentSurahId);
-  };
-  showBookmarksBtn.onclick = () => {
-    if(bookmarksListEl.style.display === 'block') {
-      showBookmarksList(false);
-    } else {
-      showBookmarksList(true);
+  openDrawerBtn.onclick = ()=> { drawer.classList.add('show'); drawer.setAttribute('aria-hidden','false'); }
+  // close drawer when clicking outside on mobile
+  document.addEventListener('click', (e)=> {
+    if(document.body.classList.contains('mobile')){
+      const inside = drawer.contains(e.target) || openDrawerBtn.contains(e.target);
+      if(!inside) drawer.classList.remove('show');
     }
-  };
+  });
 
-  // Load initial data and last bookmark or default Surah Al-Fatihah
+  // UI adapt on resize/orientation change
+  window.addEventListener('resize', ()=> { applyResponsiveUI(); });
+  window.addEventListener('orientationchange', ()=> { setTimeout(()=>applyResponsiveUI(),200); });
+
+  // initial load
   await loadSurahList();
+  applyResponsiveUI();
 
   let lastBookmarkRaw = localStorage.getItem('lastBookmark');
-  if(lastBookmarkRaw) {
-    try {
+  if(lastBookmarkRaw){
+    try{
       const lastBookmark = JSON.parse(lastBookmarkRaw);
-      if(lastBookmark.surahId) {
-        await loadSurah(lastBookmark.surahId);
-        if(lastBookmark.verseId) scrollToLastBookmark(lastBookmark.surahId);
-      } else {
-        await loadSurah(1);
-      }
-    } catch {
-      await loadSurah(1);
-    }
-  } else {
-    await loadSurah(1);
-  }
+      if(lastBookmark.surahId){ await loadSurah(lastBookmark.surahId); if(lastBookmark.verseId) scrollToLastBookmark(lastBookmark.surahId); }
+      else await loadSurah(1);
+    }catch(e){ await loadSurah(1); }
+  } else await loadSurah(1);
 
 })();
+</script>
+<script>
+    window.addEventListener('message', (event) => {
+  // Only accept messages from your embedder domain or itself (if you want, restrict further)
+  if (event.origin !== 'https://nooralquran.unaux.com') return;
+
+  if (event.data === 'check_localStorage') {
+    let isStorageAvailable = false;
+    try {
+      localStorage.setItem('test', '1');
+      localStorage.removeItem('test');
+      isStorageAvailable = true;
+    } catch(e) {
+      isStorageAvailable = false;
+    }
+    window.parent.postMessage(
+      isStorageAvailable ? 'localStorage_available' : 'localStorage_blocked',
+      event.origin
+    );
+  }
+});
