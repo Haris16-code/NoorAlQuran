@@ -53,8 +53,8 @@ Check out the live demo here: [https://nooralquran.unaux.com/](https://nooralqur
 
 ### Screenshots
 ![Quran App Demo](demo.PNG)
-![Settings](settings-demo.png)
-![Saved Bookmarks Feature](saved-bookmarks-demo.png)
+![Settings](settings-demo.PNG)
+![Saved Bookmarks Feature](saved-bookmarks-demo.PNG)
 
 
 
