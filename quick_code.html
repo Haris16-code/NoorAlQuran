@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Embed NoorAlQuran</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 20px;
+      background: #f9f9f9;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+    }
+    pre {
+      background: #272822;
+      color: #f8f8f2;
+      padding: 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: Consolas, monospace;
+      font-size: 14px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      user-select: all;
+    }
+    button {
+      display: block;
+      margin: 15px auto 0;
+      padding: 10px 25px;
+      font-size: 16px;
+      background-color: #007bff;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .copied-msg {
+      text-align: center;
+      margin-top: 12px;
+      color: green;
+      font-weight: bold;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Use NoorAlQuran in your website:</h1>
+ <button id="copy-btn">Copy Code</button>
+  <div class="copied-msg" id="copied-msg">Copied to clipboard!</div>
+  <pre id="code-snippet">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8" /&gt;
+  &lt;title&gt;NoorAlQuran Plugin&lt;/title&gt;
+  &lt;script&gt;
+    async function loadResources() {
+  // Load HTML first
+  const htmlResp = await fetch('https://raw.githubusercontent.com/Haris16-code/NoorAlQuran/main/index.html');
+  const htmlText = await htmlResp.text();
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(htmlText, 'text/html');
+
+  // Replace current body content with fetched body content
+  document.body.innerHTML = doc.body.innerHTML;
+
+  // Load and inject CSS
+  const cssResp = await fetch('https://raw.githubusercontent.com/Haris16-code/NoorAlQuran/main/style.css');
+  const cssText = await cssResp.text();
+  const styleTag = document.createElement('style');
+  styleTag.textContent = cssText;
+  document.head.appendChild(styleTag);
+
+  // Load and inject JS after HTML is loaded into DOM
+  const jsResp = await fetch('https://raw.githubusercontent.com/Haris16-code/NoorAlQuran/main/script.js');
+  const jsText = await jsResp.text();
+  const scriptTag = document.createElement('script');
+  scriptTag.textContent = jsText;
+  document.body.appendChild(scriptTag);
+}
+
+window.onload = loadResources;
+
+  &lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h2&gt;Loading NoorAlQuran app...&lt;/h2&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+  </pre>
+  <script>
+    const copyBtn = document.getElementById('copy-btn');
+    const codeSnippet = document.getElementById('code-snippet');
+    const copiedMsg = document.getElementById('copied-msg');
+
+    copyBtn.addEventListener('click', () => {
+      // Copy the plain text (unescaped) from the code snippet
+      const textToCopy = codeSnippet.textContent;
+
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        copiedMsg.style.display = 'block';
+        setTimeout(() => {
+          copiedMsg.style.display = 'none';
+        }, 2000);
+      }).catch(() => {
+        alert('Failed to copy. Please copy manually.');
+      });
+    });
+  </script>
+
+</body>
+</html>
