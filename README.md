@@ -51,10 +51,13 @@ Check out the live demo here: [https://nooralquran.unaux.com/](https://nooralqur
 
 ---
 
-### How to add your screenshot:
+### Screenshots
+![Quran App Demo](demo.PNG)
+![Settings](settings demo.png)
+![Saved Bookmarks Feature](save bookmark demo.png)
 
-- Replace `https://your-image-host.com/path-to-demo-image.png` with the actual URL of your demo screenshot image.  
-- You can upload the image to GitHub repo (e.g., in `/assets` folder) or use any image hosting service like Imgur, GitHub Issues, or GitHub Pages.
+
+
 
 ---
 
