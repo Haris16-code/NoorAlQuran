@@ -2,28 +2,43 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Qur'an Viewer</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>📖 Noor Al-Qur’an</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 <header>
-  <div style="display:flex;flex-direction:column">
+  <div class="brand">
     <h1>📖 Noor Al-Qur’an</h1>
-    <p>Arabic · Translation · Bookmark · Share · Theme</p>
+    <p>Arabic · Translation · Bookmark · Audio</p>
   </div>
-  <div style="margin-left:auto" class="muted" id="sourceInfo">Full Quran With Many Translations Language To Change Translation Language Go To Settings →</div>
-  <button id="settingsBtn" class="btn secondary" style="margin-left: 12px;">Settings ⚙️</button>
+
+  <!-- Mobile top bar (appears on small screens) -->
+  <div class="mobile-top" style="margin-left:8px">
+    <button id="openDrawerBtn" class="btn secondary" title="Open surah list">☰ Surahs</button>
+    <div id="mobileTitle" style="flex:1;text-align:center;font-weight:600">—</div>
+    <button id="showBookmarksBtn" class="btn secondary" style="margin-bottom:8px">Saved Bookmarks</button>
+    <div id="bookmarksList" aria-live="polite" style="display:none"></div>
+    <button id="openSettingsMobile" class="btn secondary" title="Settings">⚙️</button>
+  </div>
+
+  <!--<div style="margin-left:auto" class="muted" id="sourceInfo">Full Quran With Many Translations Language To Change Translation Language Go To Settings →</div>-->
+  <button id="settingsBtn" class="btn secondary" style="margin-left:12px">Settings ⚙️</button>
 </header>
 
+<!-- mobile drawer for surah list -->
+<div id="drawer" class="drawer" aria-hidden="true"></div>
+
 <div class="wrap">
-  <aside>
+  <aside id="sidebar">
     <div class="search">
-      <input id="searchInput" placeholder="Search surah name or number..." aria-label="Search surah" />
+      <input id="searchInput" placeholder="Search surah name or number..." aria-label="Search surah">
       <button id="refreshBtn" class="btn secondary" title="Reload list">Refresh</button>
     </div>
-    <button id="showBookmarksBtn" class="btn secondary" title="Show saved bookmarks" style="margin-bottom:8px;">Saved Bookmarks</button>
-    <div id="bookmarksList" aria-live="polite" style="display:none;"></div>
+    <button id="showBookmarksBtn" class="btn secondary" style="margin-bottom:8px">Saved Bookmarks</button>
+    <div id="bookmarksList" aria-live="polite" style="display:none"></div>
     <div id="surahList" aria-live="polite"></div>
     <div id="listStatus" class="muted" style="margin-top:10px"></div>
   </aside>
@@ -40,7 +55,7 @@
   <div id="settingsContent">
     <h3 id="settingsTitle">Settings</h3>
     <label for="translationSelect">Translation Language</label>
-    <select id="translationSelect" aria-label="Select translation language">
+    <select id="translationSelect" aria-label="Select translation language" style="width:100%;padding:8px;border-radius:6px">
       <option value="en">English</option>
       <option value="ur">Urdu</option>
       <option value="es">Spanish</option>
@@ -51,12 +66,12 @@
       <option value="tr">Turkish</option>
       <option value="zh">Chinese</option>
     </select>
-    <label for="themeSelect">Theme</label>
-    <select id="themeSelect" aria-label="Select theme">
+    <label style="margin-top:12px" for="themeSelect">Theme</label>
+    <select id="themeSelect" aria-label="Select theme" style="width:100%;padding:8px;border-radius:6px">
       <option value="dark">Dark</option>
       <option value="light">Light</option>
     </select>
-    <button id="closeSettingsBtn" class="closeBtn btn">Close</button>
+    <button id="closeSettingsBtn" class="closeBtn btn" style="margin-top:16px;width:100%">Close</button>
   </div>
 </div>
 <script src="script.js"></script>
