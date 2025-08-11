@@ -47,7 +47,7 @@ A fully featured, responsive web-based Qur’an application built with HTML, CSS
 
 ## Demo
 
-Check out the live demo here: [https://nooralquran.unaux.com/](https://nooralquran.unaux.com/)
+Check out the official website here: [https://nooralquran.unaux.com/](https://nooralquran.unaux.com/)
 
 ---
 
