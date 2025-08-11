@@ -412,24 +412,3 @@
   } else await loadSurah(1);
 
 })();
-</script>
-<script>
-    window.addEventListener('message', (event) => {
-  // Only accept messages from your embedder domain or itself (if you want, restrict further)
-  if (event.origin !== 'https://nooralquran.unaux.com') return;
-
-  if (event.data === 'check_localStorage') {
-    let isStorageAvailable = false;
-    try {
-      localStorage.setItem('test', '1');
-      localStorage.removeItem('test');
-      isStorageAvailable = true;
-    } catch(e) {
-      isStorageAvailable = false;
-    }
-    window.parent.postMessage(
-      isStorageAvailable ? 'localStorage_available' : 'localStorage_blocked',
-      event.origin
-    );
-  }
-});
