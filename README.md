@@ -14,7 +14,16 @@ A fully featured, responsive web-based Qur’an application built with HTML, CSS
 - Supports numerous translation languages side-by-side with the original Arabic text.
 - Easily switch between translations without reloading the app.
 - View translations by various well-known translators for better understanding.
-
+### Translation Languages Support
+- Urdu
+- English
+- Spanish
+- French
+- Indonesian
+- Russian
+- Swedish
+- Turkish
+- Chinese
 ### Audio Recitations
 - Play the exact recitation of each Ayah with a dedicated play button beside it.
 - Pause, resume, and replay audio seamlessly.
