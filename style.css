@@ -1,405 +1,383 @@
+/* Fonts */
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
-  @import url("https://fonts.googleapis.com/css2?family=Scheherazade+New&display=swap");
-  @import url("https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Scheherazade+New&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&display=swap");
 
-  :root {
-    --bg-dark: #0f1113;
-    --panel-dark: #141618;
-    --muted-dark: #9aa0a6;
-    --accent-dark: #60b3ff;
-    --card-dark: #1b1f23;
-    --btn-dark: #2b8a44;
-    --bookmark-bg: #264d1e;
-    --bookmark-color: #7fe26b;
+:root {
+  --bg-dark: #0f1113;
+  --panel-dark: #141618;
+  --muted-dark: #9aa0a6;
+  --accent-dark: #60b3ff;
+  --card-dark: #1b1f23;
+  --btn-dark: #2b8a44;
+  --bookmark-bg: #264d1e;
+  --bookmark-color: #7fe26b;
+  --glass: rgba(255, 255, 255, 0.03);
+  --mobile-gap: 12px;
+}
+/* Light theme variables (body.light) defined inline in rules below */
 
-    --bg-light: #fefefe;
-    --panel-light: #f0f0f0;
-    --muted-light: #666666;
-    --accent-light: #0066cc;
-    --card-light: #ffffff;
-    --btn-light: #2b8a44;
-  }
+* {
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: var(--bg-dark);
+  color: #e9eef2;
+}
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  transition: background 0.25s, color 0.25s;
+}
 
-  body {
-    margin: 0;
-    min-height: 100vh;
-    font-family: "Poppins", sans-serif;
-    display: flex;
-    flex-direction: column;
-    background: var(--bg-dark);
-    color: #e9eef2;
-    transition: background 0.3s, color 0.3s;
-  }
-  body.light {
-    background: var(--bg-light);
-    color: #222;
-  }
+/* Header (desktop & mobile sticky) */
+header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--glass);
+  background: linear-gradient(180deg, var(--panel-dark), #0f1113);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+.brand {
+  display: flex;
+  flex-direction: column;
+}
+.brand h1 {
+  margin: 0;
+  font-size: 17px;
+}
+.brand p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted-dark);
+}
+#sourceInfo {
+  margin-left: auto;
+  color: var(--muted-dark);
+  font-size: 13px;
+}
 
-  header {
-    padding: 18px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: var(--panel-dark);
-    transition: background 0.3s;
-  }
-  body.light header {
-    background: var(--panel-light);
-    border-color: #ddd;
-  }
-  header h1 {
-    font-size: 18px;
-    margin: 0;
-  }
-  header p {
-    margin: 0;
-    color: var(--muted-dark);
-    font-size: 13px;
-    transition: color 0.3s;
-  }
-  body.light header p {
-    color: var(--muted-light);
-  }
+/* Layout */
+.wrap {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+aside {
+  width: 320px;
+  background: var(--panel-dark);
+  border-right: 1px solid var(--glass);
+  padding: 12px;
+  overflow: auto;
+  transition: transform 0.25s;
+}
+main {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+  background: var(--bg-dark);
+}
 
-  .wrap {
-    display: flex;
-    flex: 1;
-    min-height: 0;
-  }
+/* Search / buttons */
+.search {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.search input {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--glass);
+  background: transparent;
+  color: inherit;
+}
+.btn {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 0;
+  background: var(--btn-dark);
+  color: #fff;
+  cursor: pointer;
+}
+.btn.secondary {
+  background: transparent;
+  border: 1px solid var(--glass);
+  color: var(--muted-dark);
+}
 
+/* Surah list */
+.surah-item {
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.06s;
+}
+.surah-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  transform: translateY(-2px);
+}
+.surah-item strong {
+  font-weight: 700;
+  font-size: 16px;
+}
+.surah-meta {
+  font-size: 12px;
+  color: var(--muted-dark);
+}
+
+/* Titlebar */
+.titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.titlebar h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+/* Verse card */
+.verse-card {
+  background: var(--card-dark);
+  padding: 14px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  transition: background 0.2s;
+}
+.verse-card.bookmarked {
+  background: var(--bookmark-bg);
+}
+.verse-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 10px;
+}
+.verse-num {
+  font-weight: 600;
+  color: var(--muted-dark);
+  user-select: none;
+}
+.verse-ar {
+  font-size: 34px;
+  line-height: 1.6;
+  font-family: "Scheherazade New", serif;
+  direction: rtl;
+  text-align: right;
+  color: #d0f0b7;
+  word-break: break-word;
+}
+.verse-translation {
+  margin-top: 8px;
+  color: var(--muted-dark);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.verse-translation.ur {
+  font-family: "Noto Nastaliq Urdu", serif;
+  color: #c5e1a5;
+  font-size: 18px;
+}
+
+.verse-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.verse-actions button {
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  padding: 6px;
+  border-radius: 8px;
+}
+.verse-actions button.bookmark-btn {
+  color: var(--bookmark-color);
+}
+.verse-actions button:not(.bookmark-btn) {
+  color: var(--accent-dark);
+}
+
+/* audio small button */
+.audio-btn {
+  background: #2a7fff;
+  color: white;
+  border-radius: 8px;
+  padding: 6px 8px;
+  border: 0;
+  cursor: pointer;
+  font-size: 14px;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* Bookmarks list in sidebar */
+#bookmarksList {
+  margin-top: 12px;
+  overflow-y: auto;
+  max-height: 250px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 8px;
+}
+.bookmark-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card-dark);
+  padding: 6px 8px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+.bookmark-info {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Settings modal */
+#settingsModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+}
+#settingsModal.show {
+  display: flex;
+}
+#settingsContent {
+  background: var(--panel-dark);
+  padding: 20px;
+  border-radius: 12px;
+  width: 340px;
+  color: #fff;
+}
+
+/* Mobile-specific: use media queries and .mobile class toggles in JS */
+/* We'll also add some transitions for nicer UX */
+.drawer {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 320px;
+  background: var(--panel-dark);
+  z-index: 80;
+  transform: translateX(-100%);
+  transition: transform 0.25s;
+  padding: 12px;
+  overflow: auto;
+}
+.drawer.show {
+  transform: translateX(0);
+}
+.mobile-top {
+  display: none;
+}
+
+/* Small screens */
+@media (max-width: 900px) {
   aside {
-    width: 320px;
-    background: var(--panel-dark);
-    border-right: 1px solid rgba(255, 255, 255, 0.03);
-    overflow: auto;
-    padding: 12px;
-    transition: background 0.3s, border-color 0.3s;
-    display: flex;
+    width: 44%;
+  }
+}
+
+/* Mobile friendly layout (single column, larger fonts & touch targets) */
+@media (max-width: 700px) {
+  .wrap {
     flex-direction: column;
   }
-  body.light aside {
-    background: var(--panel-light);
-    border-color: #ddd;
-  }
-
-  .search {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 10px;
-  }
-  .search input {
-    flex: 1;
-    padding: 8px 10px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.03);
-    background: transparent;
-    color: inherit;
-    transition: border-color 0.3s, background 0.3s;
-  }
-  body.light .search input {
-    background: white;
-    border-color: #ccc;
-    color: #222;
-  }
-
-  .btn {
-    padding: 8px 10px;
-    border-radius: 8px;
-    border: 0;
-    background: var(--btn-dark);
-    color: #fff;
-    cursor: pointer;
-    user-select: none;
-    transition: background 0.3s;
-  }
-  body.light .btn {
-    background: var(--btn-light);
-    color: #fff;
-  }
-  .btn.secondary {
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.04);
-    color: var(--muted-dark);
-  }
-  body.light .btn.secondary {
-    border-color: #ccc;
-    color: var(--muted-light);
-  }
-
-  .surah-item {
-    padding: 12px 10px;
-    border-radius: 8px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    transition: background 0.12s, transform 0.06s;
-  }
-  .surah-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: translateY(-1px);
-  }
-  body.light .surah-item:hover {
-    background: #ddd;
-  }
-  .surah-meta {
-    font-size: 12px;
-    color: var(--muted-dark);
-    transition: color 0.3s;
-  }
-  body.light .surah-meta {
-    color: var(--muted-light);
-  }
-  /* SURAH NAME BIGGER & BOLD */
-  .surah-item strong {
-    font-weight: 700;
-    font-size: 17px;
-  }
-
-  main {
-    flex: 1;
-    overflow: auto;
-    padding: 20px;
-    background: var(--bg-dark);
-    transition: background 0.3s;
-  }
-  body.light main {
-    background: var(--bg-light);
-  }
-
-  .titlebar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 16px;
-  }
-  .titlebar h2 {
-    margin: 0;
-    font-size: 20px;
-  }
-  .controls {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .verse-card {
-    background: var(--card-dark);
-    padding: 14px;
-    border-radius: 10px;
-    margin-bottom: 12px;
-    position: relative;
-    transition: background 0.3s;
-  }
-  body.light .verse-card {
-    background: var(--card-light);
-  }
-  /* Highlight bookmarked ayah with green background */
-  .verse-card.bookmarked {
-    background: var(--bookmark-bg);
-  }
-
-  .verse-ar {
-    font-size: 34px;
-    line-height: 1.6;
-    font-family: 'Scheherazade New', serif;
-    direction: rtl;
-    text-align: right;
-    user-select: text;
-    color: #d0f0b7;
-  }
-  body.light .verse-ar {
-    color: #264d1e;
-  }
-
-  /* Urdu translation font */
-  .verse-translation.ur {
-    font-family: 'Noto Nastaliq Urdu', serif;
-    font-size: 18px;
-    color: #c5e1a5; /* lighter green for Urdu */
-    margin-top: 8px;
-    line-height: 1.5;
-  }
-  body.light .verse-translation.ur {
-    color: #1b3a00;
-  }
-
-  /* Other translations font and color */
-  .verse-translation:not(.ur) {
-    font-size: 16px;
-    margin-top: 8px;
-    color: var(--muted-dark);
-    transition: color 0.3s;
-    line-height: 1.5;
-  }
-  body.light .verse-translation:not(.ur) {
-    color: var(--muted-light);
-  }
-
-  .verse-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-    gap: 10px;
-  }
-  .verse-num {
-    font-weight: 600;
-    color: var(--muted-dark);
-    user-select: none;
-    transition: color 0.3s;
-  }
-  body.light .verse-num {
-    color: var(--muted-light);
-  }
-
-  .verse-actions {
-    display: flex;
-    gap: 8px;
-    align-items:center;
-  }
-  .verse-actions button {
-    cursor: pointer;
-    background: transparent;
-    border: none;
-    font-size: 18px;
-    user-select: none;
-    transition: color 0.3s;
-    padding:6px;
-    border-radius:6px;
-  }
-  .verse-actions button.bookmark-btn {
-    color: var(--bookmark-color);
-  }
-  .verse-actions button:not(.bookmark-btn) {
-    color: var(--accent-dark);
-  }
-  body.light .verse-actions button:not(.bookmark-btn) {
-    color: var(--accent-dark);
-  }
-
-  /* small audio button style */
-  .audio-btn {
-    background: #2a7fff;
-    color: white;
-    border-radius: 8px;
-    padding: 6px 8px;
-    border: 0;
-    cursor: pointer;
-    font-size: 14px;
-    display:inline-flex;
-    gap:6px;
-    align-items:center;
-  }
-
-  /* Saved bookmarks list in sidebar */
-  #bookmarksList {
-    margin-top: 12px;
-    overflow-y: auto;
-    max-height: 250px;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    padding-top: 8px;
-  }
-  #bookmarksList h3 {
-    font-weight: 700;
-    margin-bottom: 8px;
-  }
-  .bookmark-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: var(--card-dark);
-    padding: 6px 8px;
-    border-radius: 6px;
-    margin-bottom: 6px;
-  }
-  body.light #bookmarksList .bookmark-item {
-    background: var(--card-light);
-  }
-  .bookmark-info {
-    font-size: 14px;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
-  .bookmark-info .surah-name {
-    font-weight: 700;
-    margin-right: 4px;
-  }
-  .bookmark-btn-go {
-    background: var(--btn-dark);
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    padding: 4px 10px;
-    font-size: 13px;
-    cursor: pointer;
-    user-select: none;
-    transition: background 0.3s;
-  }
-  body.light .bookmark-btn-go {
-    background: var(--btn-light);
-    color: #222;
-  }
-  .bookmark-btn-go:hover {
-    background: var(--btn-dark);
-  }
-  body.light .bookmark-btn-go:hover {
-    background: #2f7a2f;
-  }
-
-  /* Settings modal */
-  #settingsModal {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.6);
+  aside {
     display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
   }
-  #settingsModal.show {
-    display: flex;
+  .drawer {
+    width: 90%;
   }
-  #settingsContent {
-    background: var(--panel-dark);
-    padding: 20px;
-    border-radius: 12px;
-    width: 320px;
-    max-width: 90vw;
-    color: #fff;
-    transition: background 0.3s, color 0.3s;
+  main {
+    padding: 16px;
   }
-  body.light #settingsContent {
-    background: var(--panel-light);
-    color: #222;
+  .verse-card {
+    padding: 16px;
+    border-radius: 14px;
   }
-  #settingsContent h3 {
-    margin-top: 0;
+  .verse-ar {
+    font-size: 36px;
   }
-  #settingsContent label {
-    display: block;
-    margin: 12px 0 4px;
-  }
-  #settingsContent select {
-    width: 100%;
-    padding: 6px;
+  .audio-btn {
+    padding: 10px 12px;
     font-size: 16px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
+    border-radius: 10px;
   }
-  #settingsContent button.closeBtn {
-    margin-top: 20px;
-    background: var(--btn-dark);
+  .btn {
+    padding: 10px 12px;
+  }
+  .mobile-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     width: 100%;
   }
-  body.light #settingsContent button.closeBtn {
-    background: var(--btn-light);
+  header {
+    padding: 10px 12px;
   }
+  .surah-item {
+    padding: 10px;
+  }
+}
 
-  /* Responsive */
-  @media (max-width: 700px) {
-    aside {
-      display: none;
-    }
-  }
+/* Light theme */
+body.light {
+  --bg-dark: #fefefe;
+  --panel-dark: #f6f6f6;
+  --muted-dark: #666666;
+  --accent-dark: #0066cc;
+  --card-dark: #ffffff;
+  background: var(--bg-dark);
+  color: #222;
+}
+body.light header {
+  background: var(--panel-dark);
+  border-color: #e9e9e9;
+}
+body.light .verse-ar {
+  color: #264d1e;
+}
+body.light .verse-translation {
+  color: var(--muted-dark);
+}
+body.light .bookmark-item {
+  background: #fff;
+}
+
+/* Tiny helper for centered loader text */
+.muted {
+  color: var(--muted-dark);
+  font-size: 13px;
+}
+.placeholder {
+  padding: 24px;
+  text-align: center;
+  color: var(--muted-dark);
+}
